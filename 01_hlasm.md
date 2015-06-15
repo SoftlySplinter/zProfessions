@@ -170,9 +170,139 @@ In all cases, the move instruction moves 1 byte at a time (left to right in memo
 
 ### Logical Instructions
 
+The EXCLUSIVE OR instructions perform XOR bit-wise.
+
+```hlasm
+X   1,NUMBER    XOR REGISTER 1 WITH NUMBER (32-BITS)
+XG  1,NUMBER    XOR REGISTER 1 WITH NUMBER (64-BITS)
+XR  1,2         XOR REGISTER 1 WITH REGISTER 2 (32-BITS)
+XGR 1,2         XOR REGISTER 1 WITH REGISTER 2 (64-BITS)
+XC  NUM1,NUM2   XOR NUM1 WITH NUM2 (256-BITS)
+```
+
+Rules of thumb:
+
+* G -> 64-bits
+* H -> 16-bits
+* R -> Register
+* C -> Character
+
+
+The AND instructions perform AND bit-wise
+
+```hlasm
+N   1,NUMBER
+NG  1,NUMBER
+NR  1,2
+NGR 1,2
+NC  NUM1,NUM2
+```
+
+The OR instructions perform bit-wise OR.
+
+```hlasm
+O   1,NUMBER
+OG  1,NUMBER
+OR  1,2
+OGR 1,2
+OC  NUM1,NUM2
+```
+
+The 5 basic operations (load, store, AND, OR, XOR) have over 25 instructions so far.
+
+How to decide which instruction to use? Chose for:
+
+* Purpose (don't STORE to load a register)
+* Data (32-bits, 16-bits, 64-bits).
+
+Many iunstructions can perform similar operations, e.g.:
+
+```hlasm
+XR   15,15
+L    15,=F'0'
+LA   15,0
+```
+
+Different instructions **never** do the same thing, even if you think they do (the result doesn't justify the means).
 
 ### Working with HLASM
+Available on all System z (z/OS z/VM, z/VSE, z/Linux, z/TPF).
 
+HLASM provides a wider range of assembler directives. A directive is not an instruction, it is an instruction to the assembler during assembly of the program.
+
+HLASM is an incredible macro programming facility.
+
+HLASM allows for structured programming.
+
+Assembling is the process of changing assembler source code into OBJECT DECKS, producing 2 outputs:
+
+* OBJECT DECKS - this is the object code that is used as input to binding
+* Listing - this shows any errors, all diagnostics and human readable output from the assemble phase.
+
+Binding is the process of combining object code into a LOAD MODULE. To bind use a Binder.
+
+The Binder produces 2 outputs:
+
+* LOAD MODULE - this is the bound object decks forming an assembler program
+* LOAD MAP - this is the binder equivalent of an assembler listing
+
+A LOAD MOUDLE can be loaded into memory by the operating system and run.
+
+#### Syntax
+Comments start with a `*` in column 1 or appear after free-form instructions operands until column 72.
+
+```hlasm
+* THIS IS A COMMENT
+L 1,=F'12'  THIS IS ANOTHER COMMENT
+```
+
+Labels start in column 1, operation codes start after column 1 or a label (normally column 10). Operands come after the operation, usually starting in column 16.
+
+#### CSECTS and DSECTS
+
+CSECT -> CONTROL SECTION (HLASM directive). A CSECT contains machine instructions to be run on the machine.
+
+DSECT -> DUMMY SECTION (HLASM directive). A DSECT is used to define the structure of data.
+
+Both CSECT and DSECT are terminated with the END statement.
+
+```hlasm
+MYPROG   CSECT
+    ... program listings ...
+MYSTRUCT DSECT
+    ... data structures ...
+END
+```
+
+#### Defining data
+
+Data is defined via the DC and DS directives.
+
+* `DC` Define Constant. Defines data and initialises it to a given value.
+* `DS` Define Storage. Defines storage for data but does not give it a value.
+
+```hlasm
+NUMBER1   DC    F'12'
+NUMBER2   DC    H'12'
+TOTAL     DS    H
+MYSTR     DC    C'HELLO WORLD'
+MYHEX     DC    X'FFFF'
+```
+
+#### Literals
+
+A literal is an inline definition of data used in an instruction but the space taken for the literal is in the nearest literal pool. A literal pool collects all previous literals and reserves the space for them.
+
+By default HLASM produces an implicitly declared literal pool at the end of the CSECT.
+
+To cause HLASM to produce a literal pool, use the `LTORG` directive.
+
+```hlasm
+L     1,=F'1'
+X     1,=H'2'
+...
+LTORG ,
+```
 
 ### Addressing data
 
