@@ -306,6 +306,52 @@ LTORG ,
 
 ### Addressing data
 
+There are 2 ways of accessing daa for manipulating:
+
+* Base-displacement (and index) addressing
+* Relative addressing
+
+
+Relative addressing calculates the datas relative position from the current PSW.
+
+```hlasm
+LRL 1,NUMBER        LOAD RELATIVE REGISTER 1 WITH NUMBER
+   ...
+NUMBER DC   F'23'
+```
+
+#### Base+Displacement+Index addressing
+
+Base+Displacement(+index) addressing involves using a register as a pointer to memory (the BASE register). The displacement is usually between 0 and 4095 bytes (max 4k). An index register is an additional register whose value is added to the base and displacement to address more memory.
+
+The index register also allows the assembler programmer to cycle through an array whilst maintaining the same base+displacement.
+
+**Note:** Register 0 cannot be used as a base or index register as it counts as *value* 0.
+
+Base, displacement and indexes are optionally specified on an instruction, the implicit default value is 0.
+
+#### Loading Addresses
+
+The LOAD ADDRESS instruction is used to load an address into a register.
+
+```hlasm
+LA    1,MYDATA          LOAD ADDRESS OF MYDATA INTO REGISTER 1
+```
+
+`LA` Can be used to set a register to between 0 and 4095 by specifying a base index register of 0.
+
+```hlasm
+LA    1,12              base=0, index=0, displacement=12
+LA    1,12(0,0)
+```
+
+Example: store the character 'O' at index 4, into the string MYDATA referneced by BASE register 12.
+
+```hlasm
+LA    4,4            LOAD ADDRESS 4 INTO REGISTER 4
+IC    3,=C'O'        LOAD CHARACTER 'O' INTO REGISTER 3
+STC   3,MYDATA(4)    base=12, index=4, displacement=5
+```
 
 ### Branching
 
