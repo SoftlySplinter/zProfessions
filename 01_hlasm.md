@@ -505,7 +505,78 @@ MYLOOP WTO   'HELLO'
 ```
 
 ### Calling conventions
+How to call other porgrams, and the conventions associated with this. Who saves the state of the caller, because when you call someone, you expect that your stuff hasn't been altered.
 
+This isn't enforced, but is a bloody good idea to avoid undesirable and unpredicatble results.
+
+In general when programming in assembler, the caller will provide a save area and the called program or routine will save all GPRs to that save area. The subroutine then executes itself and returns control to the caller by (typically):
+
+* Setting a return code in a register
+* Prepare the register on which it should branch back on
+* Restore all other registers
+* Branch
+
+Although free to do as you please, the most common convention is as follows:
+
+* Register 1 - parameter list pointer
+* Register 13 - pointer to register save area
+* Register 14 - return address
+* Register 15 - entry point
+
+Once the registers are save, the called subroutine will:
+
+* Store R13 in new savearea + 4 (link backwards to callers save area)
+* Store address of new savearea in caller's savearea + 8 (link forward)
+* Update R13 to point to a new save area (so that it can call other programs/routines)
+* Establish R12 as base register for the program
+
+Upon termination, the called subroutine will:
+
+* Set a return code in R15
+* Restore R13 to the value it was previously (new savearea + 4)
+* Restore R14,0,1,&hellip;,12 from save area pointed to by R13.
+* Branch back to R14.
+
+Caller:
+
+```hlasm
+       LA    1,PARAMS      POINT TO PARAMETERS
+       LA    15,SUB1       LOAD ADDRESS OF SUBROUTINE
+       BALR  14,15         BRANCH TO R15 AND SAVE
+RETURN *                          IN R14
+       LTR   15,15         CHECKS RETURN CODE 0?
+```
+
+Callee:
+
+```hlasm
+       STM   14,12,12(13)  STORE REGISTERS
+       LR    12,15         GET ENTRY ADDRESS
+       ...
+       LM    14,12,12(13)  RESTORE REGISTERS
+       XR    15,15         SET RETURN CODE (0)
+       BR    14            BRANCH TO CALLER
+```
+
+Due to this convention, avoid using registers: 0, 1, 12, 13, 14, 15 in epilog and prologue.
+
+z/OS services typically use R0, 1, 14, 15. See the man pages for more information.
 
 ### How to read principals of operations (POPs)
+Explain everything: RTFM.
 
+Each instruction is described in detail:
+
+* Syntax
+* Machine code
+* Operation
+* Condition code settings
+* Programming exceptions
+
+Instruction format used is generally related to the assembler syntaxt and the operation.
+
+* `RR` Register-Register - this form usually manipulated registers.
+* `RX` Register, Index, base displacement - usually moving between memory and registers
+* `SS` Storage-Storage - acts on data in memory.
+
+Diagrams show what the binary detail of the command, useful for problem diagnostics.
