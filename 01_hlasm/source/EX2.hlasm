@@ -15,27 +15,31 @@ EX2      RMODE 24
 * SAVE REGISTER 1 SOMEWHERE BECAUSE IT MAY BE USED BY WTO             
 * HERE...                                                             
 *                                                                     
+         LR    3,1                1 -> 3                              
          WTO   'HELLO'                                                
          LA    5,WTO_AR           5 -> WTO BUFFER                     
 *                                                                     
 * RESTORE THE SAVED VALUE TO REGISTER 1                               
 * HERE...                                                             
 *                                                                     
+         LR    1,3                3 -> 1                              
          L     3,0(,1)            GET TO PARM LIST POINTER            
 *                                                                     
 * LOAD THE HALFWORD VALUE AT REGISTER 3 DISPLACEMENT 0 TO REGISTER 4  
 * HERE...                                                             
 *                                                                     
+         LH    4,0(,3)                                                
 *                                                                     
 * LOAD THE ADDRESS AT REGISTER 3 DISPLACEMENT 2 TO REGISTER 3         
 * HERE...                                                             
 *                                                                     
+         LA    3,2(,3)                                                
 *                                                                     
 * CHANGE THE WXYZ TO SPECIFY A DISPLACEMENT 0 AND BASE REGISTER 3 IN  
 * THE MVC INSTRUCTION BELOW.  NOTE THAT FOR THE MVC INSTRUCTION,      
 * THERE IS NO INDEX PARAMETER (UNLIKE IN LA)                          
 *                                                                     
-LOOP     MVC   OUT_STRING(1),WXYZ                                     
+LOOP     MVC   OUT_STRING(1),0(3)                                     
          WTO   TEXT=(5)                                               
          AHI   3,1                BUMP 3 TO NEXT CHARACTER            
          BCT   4,LOOP                                                 
