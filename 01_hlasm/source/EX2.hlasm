@@ -28,12 +28,12 @@ EX2      RMODE 24
 * LOAD THE HALFWORD VALUE AT REGISTER 3 DISPLACEMENT 0 TO REGISTER 4  
 * HERE...                                                             
 *                                                                     
-         LH    4,0(,3)                                                
+         LH    4,0(,3)            PARAMETER LENGTH -> 4               
 *                                                                     
 * LOAD THE ADDRESS AT REGISTER 3 DISPLACEMENT 2 TO REGISTER 3         
 * HERE...                                                             
 *                                                                     
-         LA    3,2(,3)                                                
+         LA    3,2(,3)            PARAMETER VALUE -> 3                
 *                                                                     
 * CHANGE THE WXYZ TO SPECIFY A DISPLACEMENT 0 AND BASE REGISTER 3 IN  
 * THE MVC INSTRUCTION BELOW.  NOTE THAT FOR THE MVC INSTRUCTION,      
