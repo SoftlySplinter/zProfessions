@@ -353,14 +353,156 @@ IC    3,=C'O'        LOAD CHARACTER 'O' INTO REGISTER 3
 STC   3,MYDATA(4)    base=12, index=4, displacement=5
 ```
 
+
+
 ### Branching
+Branching allows control flow in the program, changing the sequence of execution, performed via the BRANCH instructions.
+
+Most branch instructions are conditional, they will pass control to the branch target if a condition is met.
+
+The condition is called the CONDITION CODE (CC), 2-bits stored in the PSW (value is 0-3). Machine instructions may (or may not) set the CC.
+
+A branch insturction provides a branch mask
+
+`BC M,D(X,B)`.
+
+The branch mask instructs the processor that the branch will be taken if any of the bits in the CC match those in the branch mask.
+
+Fortunately most code uses HLASM bracnh mnemonics to provide a branch mask.
+
+* `B` branch unconditionally (`BC 15,`)
+* `NOP` no operation - never take branch, used as a placeholder (`BC 0,`)
+* `BE` branch on equal (`BC 8,`)
+* `BL` branch on low (`BC 4,`)
+* `BH` branch on high (`BC 2,`)
+* `BNL` branch not low (`BC 11,`)
+* `BNH` branch not high (`BC 13,`)
+* `BZ` branch on zero (`BC 8,`)
+* `BNZ` branch not zero (`BC 7,`)
+* There are many other branch mnemonics
+  * To be used after compare, arithmetic and test under mask instructions
+  * Relative addressing uses JUMP not BRANCH.
+
+Condition Code - Mask value:
+
+* 0 - 8
+* 1 - 4
+* 2 - 2
+* 3 - 1
+
+How the mask works:
+
+* `B` uses mask `15` or `0b1111` or `8 + 4 + 2 + 1`, i.e. branch on any CC - always branch.
+* `BE` uses mask `8` or `0b1000` or `8`, i.e. branch on CC 0.
+
+```hlasm
+L     1,NUMBER
+LTR   1,1
+BNZ   NONZERO      BRANCH TO NONZERO
+B     COMMONCODE   REJOIN COMMON CODE
+```
 
 
-### Aritmetic
 
+### Arithimetic
+Arithmetic is performed in a wide variety of ways on z/Architecture:
+
+* Fixed point (including logical) -> performed in GPRs
+* Packed decimal -> performed in memory
+* Binary and Hexidecimal floating point -> performed in FPRs
+
+
+Fixed point arithimetic:
+* Normal (e.g. adding contents of 2 numbers)
+* Signed with numbers stored in 2s complement form
+* Logical fixed point is unsigned
+
+Packaged decimal
+* Numbers are packed in decimal form
+
+#### ADD instructions
+
+```hlasm
+AR    1,2        ADD REGISTER 2 TO REGISTER 1 (32-BIT SIGNED)
+ALR   1,2        ADD REGISTER 2 TO REGISTER 1 (32-BIT LOGICAL)
+A     1,NUMBER   ADD NUMBER TO REGISTER 1 (32-BIT SIGNED)
+AL    1,NUMBER   ADD NUMBER TO REGISTER 1 (32-BIT LOGICAL)
+AFI   1,37       ADD 37 TO REGISTER 1 (IMMEDIATE)
+```
+
+**Note** immediate instructions, the operand is included in the instruction rather than needed to be obtained from memory.
+
+At the end of the addition, the CC is updated:
+
+* CC 0 -> result is 0; no overflow
+* CC 1 -> result is less than 0; no overflow
+* CC 2 -> result is greater than 0; no overflow
+* CC 3 -> overflow occured
+
+#### SUBTRACT instructions
+
+```hlasm
+SR    1,2        SUBTRACT REGISTER 2 FROM REGISTER 1 (SIGNED)
+SLR   1,2        SUBTRACT REGISTER 2 FROM REGISTER 1 (LOGICAL)
+S     1,NUMBER   SUBTRACT NUMBER FROM REGISTER 1 (SIGNED)
+SL    1,NUMBER   SUBTRACT NUMBER FROM REGISTER 1 (LOGICAL)
+AFI   1,-37      ADD -37 TO REGISTER 1 (IMMEDIATE)
+```
+
+* CC 0 -> result is 0; no overflow
+* CC 1 -> result is less than 0; no overflow
+* CC 2 -> result is greater than 0; no overflow
+* CC 3 -> overflow occured
+
+#### MULTIPLY instruction
+
+```hlasm
+MR    2,7        MULTIPLY REGISTER 2 BY REGISTER 7
+M     2,NUMBER   MULTIPLY REGISTER 2 BY NUMBER
+```
+
+The first operand is an even-odd pair of registers:
+* The multiplicand is tored in odd register of 1st operand - in R3 as 32-bit number
+* The multiplier is stored in 2nd operand as 32-bit number
+* The result of the multiply is stored in:
+  * The even register (of the pair) - top 32-bits of the result
+  * The odd register (of the pair) - bottom 32-bits of the result
+
+CC is unchanged.
+
+#### DIVIDE instruction
+
+```hlasm
+DR    2,7        DIVIDE REGISTER 2 BY REGISTER 7
+D     2,NUMBER   DIVIDE REGISTER 2 BY NUMBER
+```
+
+The first operand is an even-odd pair of registers, the even (of the pair) is the top 32 bits, the odd register (of the pair) is the bottom 32-bits.
+
+The second operand is the divisor (32-bits).
+
+The quotient is stored in the odd register. The remainder in the even register.
+
+CC is unchanged.
 
 ### Looping
+A simple loog is formed by using a counter, a comparison and a branch:
 
+```hlasm
+       LA     2,0
+MYLOOP AHI    2,1
+       WTO    'HELLO'
+       CHI    2,10
+       BL     MYLOOP
+```
+
+There's a simple and better way:
+
+```hlasm
+       LA    2,10
+MYLOOP WTO   'HELLO'
+       BCT   2,MYLOOP
+```
 
 ### Calling conventions
 
