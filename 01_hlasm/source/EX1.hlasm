@@ -7,7 +7,7 @@
 EX1      CSECT                                                        
 EX1      AMODE 31                                                     
 EX1      RMODE 24                                                     
- * USUAL PROGRAM SETUP    <- FIX THIS COMMENT                         
+* USUAL PROGRAM SETUP    <- FIX THIS COMMENT                          
          STM   14,12,12(13)                                           
          BALR  12,0                                                   
          USING *,12                                                   
@@ -18,6 +18,7 @@ EX1      RMODE 24
 * HERE...                                                             
 * ********************************************************************
 *                                                                     
+         MVC   OUT_STRING,IN_STRING                                   
          LA    5,WTO_AR                                               
          WTO   TEXT=(5)                                               
 LMRET    LM    14,12,12(13)                                           
@@ -29,12 +30,13 @@ LMRET    LM    14,12,12(13)
 * HERE...                                                             
 * ********************************************************************
 *                                                                     
+         L     15,=F'0'                                               
          BR    14                                                     
 * ********************************************************************
 * END OF PROGRAM                                                      
 * ********************************************************************
+         LTORG ,                                                      
 IN_STRING  DC    C'HELLO WORLD!'                                      
 WTO_AR     DC    AL2(L'OUT_STRING)                                    
 OUT_STRING DS    CL(L'IN_STRING)                                      
-         LTORG ,                                                      
          END                                                          
