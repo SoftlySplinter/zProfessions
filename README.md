@@ -1,4 +1,4 @@
-# z/Professionals
+# z/Professions
 
 z/Professionals is a course run internally in IBM which teaches fundementals of z/OS programming.
 
