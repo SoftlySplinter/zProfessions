@@ -582,9 +582,58 @@ Instruction format used is generally related to the assembler syntaxt and the op
 Diagrams show what the binary detail of the command, useful for problem diagnostics.
 
 ## What is the assemble trying to tell me?
-
 All in the knowledge centre -> [here](http://www-03.ibm.com/systems/z/os/zos/library/bkserv/)
 
 `DC X'00'` is useful to force an ABEND and most of the time a dump, and is easier than `WTO`ing all the registers.
 
 Using map in the Assembly listing is useful to check when max displacement is approaching limits.
+
+## HLASM Runtime Debugging
+*Fixing the !!fun!! of programming in assembler.*
+
+There's a rational explanation of every error message and problem. 
+
+If you are lucky, the program with <abbr title="ABnormal END">ABEND</abbr>, giving a nice sympton dump. If not there is an internal tool.
+
+Programs should normally run to completion and exit return code 0. Some reasons why not:
+
+* Hardware detected error
+* System detected error
+* Application logic error
+
+Program checks:
+
+* 0C1 Operation Exception - CPU attempts to execute an instruction with an invalid op code.
+* 0C2 Priviledged operation Exception.
+* 0C3 Execute exception - target of an EXECUTE instruction is another EXECUTE.
+* 0C4
+  * 0C4-4 Protection Exception - Key of running program tries to access storage of another key.
+  * 0C4-10 Segment Translation Exception - Program trying to access storage that has not been obtained
+  * 0C4-11 Page Translation Exception - Program trying to access storage that has not been obtained.
+* 0C5 Addressing Exception - CPU attempts to reference a main-storage location that is not availabe.
+* 0C6
+* 0C7
+* 0C8
+* 0C9
+
+See MSV System codes in the knowledge centre.
+
+When a program check or ABEND occurs, z/OS enters recovery process and will provide a Sympton Dump.
+
+### Symptom Dumps
+
+Provides the PSW at time of error which, most usefully, provides the address of the program at time of execution. Althought the address and offset are printed, they should not be trusted. They can be the next instruction or the instruction before.
+
+Data at PSW provides a useful view of what was being executed, in the form `start address - instructions`.
+
+### Program Status Word (PSW)
+
+PSW is 128-bits in length.
+
+* 0-32 contain flags indicating control information for the CPU
+* 33-63 are 0
+* 64-127 contain the instruction address
+
+Can access the PSW in programs through using EPSW (Extract PSW) and set it using LPSW(E), replacing the entire PSW with the contents of storage, meaning you can do branching - but probably not a good idea if you really don't know what you're doing.
+
+The BEAR (Branch ? Address Register) can be useful if the PSW is missing, or has an invalid address.
