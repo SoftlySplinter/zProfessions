@@ -584,3 +584,5 @@ Diagrams show what the binary detail of the command, useful for problem diagnost
 ## What is the assemble trying to tell me?
 
 All in the knowledge centre -> [here](http://www-03.ibm.com/systems/z/os/zos/library/bkserv/)
+
+`DC X'00'` is useful to force an ABEND and most of the time a dump, and is easier than `WTO`ing all the registers.
