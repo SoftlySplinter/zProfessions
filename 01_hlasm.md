@@ -580,3 +580,7 @@ Instruction format used is generally related to the assembler syntaxt and the op
 * `SS` Storage-Storage - acts on data in memory.
 
 Diagrams show what the binary detail of the command, useful for problem diagnostics.
+
+## What is the assemble trying to tell me?
+
+All in the knowledge centre.
