@@ -960,3 +960,9 @@ Displacement values for new instructions because 20 (? - can be 16-bits and can 
 Instead of `LA` you can use `LAR(L)` - Load Address Relative (Long), note the lack of base (and index) registers. There are a good number of relative addressing variants, but not for arithmetic or boolean operations, so you'll still need base registers for those, or just use register variants instead.
 
 The main use of relative addressing is for branching. Use Jump not Branch in HLSAM.
+
+### AMODE and RMODE
+* AMODE - Addressing Mode. Where in memory can a program address.
+* RMODE - Residency Mode. Where the program is loaded.
+
+Most often the same and 31, unless there's a damn good reason not to.
