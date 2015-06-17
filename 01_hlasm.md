@@ -637,3 +637,292 @@ PSW is 128-bits in length.
 Can access the PSW in programs through using EPSW (Extract PSW) and set it using LPSW(E), replacing the entire PSW with the contents of storage, meaning you can do branching - but probably not a good idea if you really don't know what you're doing.
 
 The BEAR (Branch ? Address Register) can be useful if the PSW is missing, or has an invalid address.
+
+## System Data Areas and Services
+
+Lots of information in the documentation (KC).
+
+### System Data Areas
+z/OS allocates data areas (control blocks) in each address block, used to:
+
+* Keep state
+* Store configuration
+* Collect statistics
+* Point to other data areas (anchor blocks)
+* Point to system routines that can be called to request services
+* Parameter areas
+
+### System Services
+z/OS manages all the resources in the system:
+
+* Processors
+* Storage
+* I/O
+* Links to communication networks
+* Dispatching and balanching
+
+Applications need to interace with z/OS to request services.
+
+
+#### Processes and Threads
+* Schedule work
+* Start new processes or threads (TCBs, SRBs)
+* Create and destroy address spaces
+* Load executable modules into virtual storage
+* Interrupt and resume processes
+* Synchronise work between processes
+* Priotise the work to optimise use of resources
+* Handle exceptions and recover from failure
+
+#### Storage
+* Get and free storage (virtual and real, private or common)
+* Protect storage
+* Serialise access to storage
+* Allocate and access common storage.
+
+#### I/O
+* Allocate datasets
+* Read and write
+* organise data in datasets
+* Verify permissions
+
+#### Other services
+* Network communication (TCP/IP)
+* Security (RACF)
+* Sysplex (XES/XCF)
+* Problem determination
+  * Storage dumps
+  * Trace
+  * Slip traps
+
+### System Macros
+Request services from z/OS.
+
+The main macro libraries are in:
+
+* `SYS1.MACLIB`
+* `SYS1.MODGEN`
+
+There are other macros for specific components (RACF, RRS, XCF/XES, etc.)
+
+### System data areas
+Common systemn data areas:
+ 
+#### Prefixed Save Area (PSA)
+Located at virtual storage 0 in every address space.
+
+Macro `IHAPSA` (DSECT PSA)
+
+Used to save area of execution state address space during interruptions, anchor block for many key system control blocks, PSAAOLD point to current address space ASCB, PSATOLD point to current task TCB.
+
+#### Communications Vector Table (CVA)
+Absolute virtual address 16 contains the pointer to the CVA.
+
+Used to locate entry point to many operating system service routings, pointers to many system control blocks, `CVTECVT` points to Extended CVT.
+
+```hlasm
+L      R03,16        CVT ADDRESS - NOTE: SHOULD USE CVT OFFSET FROM PSA
+USING  CVT,R03
+L      R04,CVTECVT   ECVT ADDRESS
+USING  ECVT,R04
+```
+
+#### Address Space Control Block (ASCB)
+Used to hold basic information about an address space; jobname, ASID. More infomration is held in ASCB extension ASXB.
+
+```hlasm
+L     R02,PSAAOLD-PSA   ASCB ADDRESS
+USING ASCB,R02
+LA    R02,ASCBASID      HOME ASID
+```
+
+#### Task Control Block (TCB)
+Used to represent task or a dispatchable unit of work. Anchor to other task related control blocks.
+
+#### Event Control Block (ECB)
+Normally resides in user address space.
+
+Represents an even that TCBs can wait form, when an event is completed, it is POSTed and the TCBs are resumed.
+
+This is used to synchronise task.
+
+Used with `WAIT`, `EVENTS`, `POST`, `ATTACH`, `ATTACHX` and `WTOR` macros.
+
+### System macros
+
+#### GETMAIN
+Allocates virtual storage, equivalent to `STORAGE OBTAIN` macro.
+
+Two types of linkage:
+
+* SVC - Task only, no cross-memory. 24, 31 or 64 bit storage with no locks.
+* Branch - Task or SRB, cross-memory. 24, 31 or 64 bit storage where locks can be held.
+
+```hlasm
+L       R00,=A(6000)             REQUEST AREA LENGTH
+GETMAIN RU,LV=(R00),LOC=(31,31)  UNCONDITIONAL, 31 BIT
+```
+
+#### FREEMAIN
+Frees virtual storage.
+
+```hlasm
+L        R01,AREA             AREA IS THE ADDRESS OF THE STORAGE
+L        R00,=A(L'AREA)       LENGTH OF THE AREA
+FREEMAIN RU,R=(R01),LV=(R00)  UNCONDITIONAL
+```
+
+*Note:* Unconditional means that if the storage cannot be (de)allocated, an ABEND occurs. Conditional give an RC 15.
+
+#### Storage
+This macro is used to obtain or release areas of virtual storage.
+
+Two functions:
+
+* `STORAGE OBTAIN`
+* `STORAGE RELEASE`
+
+Linkage types:
+
+* `LINKAGE=SYSTEM` receives control through `PC`
+* `LINKAGE=SVC` receives control through `SVC`
+* `LINKAGE=BRANCH` receives control through branch
+
+Obtaining virtual storage in requested subpool and location (24 or 31 bit storage). The real backing storage can be in 24, 31 or 64 bit storage.
+
+To unconditionally obtain 1000 bytes of storage from `SP=0` using `LINKAGE=SYSTEM`, storage address is returned in R01.
+
+```hlasm
+STORAGE OBTAIN,
+      LENGTH=1000,
+      ADDR=(1),
+      LOC(24,64),
+      COND=NO
+```
+
+Releasing virtual storage of previously allocated storage (through STORAGE OBTAIN or GETMAIN).
+
+To unconditionally release 1000 bytes pointed by address R01:
+
+```hlasm
+STORAGE RELEASE,
+      LENGTH=1000,
+      ADDR=(1),
+      COND=NO
+```
+
+### DCB
+
+Describe the attributes of a dataset, used with non-VSAM datasets. Must be allocated in 24 bit storage.
+
+```hlasm
+MYDCB   DCB   DSORG=PS,RECFM=VBA,MACRF=(W),
+              BLKSIZE=882,LRECL=125,DDNAME=SNAPME
+```
+
+#### OPEN (datasets)
+
+Prepares a dataset for processing
+
+```hlasm
+         LA    R03,MYDCB
+         OPEN  ((R03),),
+               MODE=31,
+               MF=(E,L_OPEN)              EXECUTE FORM
+               
+L_OPEN   OPEN  (,(OUTPUT)),MODE=31,MF=L   LIST FORM
+```
+
+#### CLOSE (datasets)
+
+```hlasm
+LA    R03,MYDCB
+CLOSE ((R03)),MODE=31
+```
+
+#### GET (dataset)
+
+GET macro to retrieve records from QSAM dataset (Queued Sequential Access Method).
+
+GET has two modes:
+
+* Move mode: record is copied to buffer provided
+* Locate mode: pointer to record in buffer
+
+Move mode:
+
+```hlasm
+         GET   DCBNAME,RECBUF
+         LA    R04,RECBUF
+         GET   DCBNAME,(R04)
+DCBNAME  DCB   MACRF=GM,...
+```
+
+Locate mode:
+
+```hlasm
+         GET   DCBNAME
+DCBNAME  DBC   MACRF=GL,...
+```
+
+#### PUT (datasets)
+
+Move mode:
+
+```hlasm
+         PUT   DCBNAME,RECBUF
+         LA    Rxx,RECBUF
+         PUT   DCBNAME,(Rxx)
+DCBNAME  DCB   MACRF=PM,...
+```
+
+Locate mode
+```hlasm
+         LA    R01,RECBUF
+         PUT   DCBNAME
+DCBNAME  DCB   MACRF=PL,...
+```
+
+#### WTO
+Write messages to operator console.
+
+#### SNAPX
+Dump virtual storage areas allocatored to current job. It can also dump areas in data spaces. Program execution continues after SNAPX.
+
+```hlasm
+         LA    R03,SNAPDCB POINTER TO DCB
+         SNAPX DCB=(R03),
+               STORAGE=(TCB_S,TCB_E),
+               STRHDR=(SNAPH1)
+
+TCB_S    DS    A                               SNAP AREA 1 START
+TCB_E    DS    A                               SNAP AREA 1 END
+
+SNAPH1   DC    AL1(L'SNAPT1)
+SNAPT1   DC    C' TCB: '
+
+SNAPDCB  DCB   DSORG=PS,RECFM=VBA,MACRF=(W),
+               BLKSIZE=882,LRECL=125,
+               DDNAME=SNAPME
+```
+
+### System macro forms
+
+Standard form, List and execute (ensures re-entrant macros), List, Execute, Modify.
+
+Example standard form:
+
+```hlasm
+          WTO   TEXT=L3_MSG1L
+L3_MSG1L  DC    AL2(L'L3_MSG1)    LENGTH OF MESSAGE AREA
+L3_MSG1   DC    CL80'MESSAGE1'    MESSAGE AREA
+```
+
+Example executed and list forms:
+
+```hlasm
+          WTO   TEXT=L3_MSG2L,MF=(E,WTOLST1)
+WTOLST1   WTO   TEXT=,MF=L
+L3_MSG2L  DC    AL2(L'L3_MSG2)                 LENGTH OF MESSAGE AREA
+L3_MSG2   DC    CL80'MESSAGE2'                 MESSAGE AREA
+```
