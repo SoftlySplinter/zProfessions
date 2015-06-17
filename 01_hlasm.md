@@ -926,3 +926,37 @@ WTOLST1   WTO   TEXT=,MF=L
 L3_MSG2L  DC    AL2(L'L3_MSG2)                 LENGTH OF MESSAGE AREA
 L3_MSG2   DC    CL80'MESSAGE2'                 MESSAGE AREA
 ```
+
+## Relative Addressing
+What happens when you run out of registers - there's only 16 of the buggers.
+
+Absolute addressing with base registers makes it difficult to do some things - branching backwards.
+
+`USING` and labelled values make things easy, so long as you stay with 4K.
+
+(Contrived) Exmaple:
+
+```hlasm
+R6        EQU   6,,,,GR32
+R8        EQU   8,,,,GR32
+          USING WS,R6
+          la    R6,WS_INIT
+LABEL1    LA    R8,COUNT
+...
+WS_INIT   DC CL24' '        FILTER
+          DC F'1'           COUNT
+...
+WSDSECT
+FILTER    DS CL24
+COUNT     DS F
+```
+
+So how do we address storage using a >12 bit displacement - use 2 (or more) base registers.
+
+To fix this - relative addressing is needed.
+
+Displacement values for new instructions because 20 (? - can be 16-bits and can be 32-bits) bits in length - and they're allowed to be positive or negative. *Note:* all instructions are halfword aligned.
+
+Instead of `LA` you can use `LAR(L)` - Load Address Relative (Long), note the lack of base (and index) registers. There are a good number of relative addressing variants, but not for arithmetic or boolean operations, so you'll still need base registers for those, or just use register variants instead.
+
+The main use of relative addressing is for branching. Use Jump not Branch in HLSAM.
