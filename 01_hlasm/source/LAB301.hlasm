@@ -1,0 +1,126 @@
+         PRINT ON,NOGEN                                                 
+LAB3     CSECT ,                                                        
+LAB3     AMODE 31                                                       
+LAB3     RMODE 31                                                       
+**********                                                              
+* REGISTER EQUATES                                                      
+**********                                                              
+R00      EQU   0,,,,GR32                                                
+R01      EQU   1,,,,GR32                                                
+R02      EQU   2,,,,GR32                                                
+R03      EQU   3,,,,GR32                                                
+R04      EQU   4,,,,GR32                                                
+R05      EQU   5,,,,GR32                                                
+R06      EQU   6,,,,GR32                                                
+R07      EQU   7,,,,GR32                                                
+R08      EQU   8,,,,GR32                                                
+R09      EQU   9,,,,GR32                                                
+R10      EQU   10,,,,GR32                                               
+R11      EQU   11,,,,GR32                                               
+R12      EQU   12,,,,GR32                                               
+R13      EQU   13,,,,GR32                                               
+R14      EQU   14,,,,GR32                                               
+R15      EQU   15,,,,GR32                                               
+*                                                                       
+L3_WS    DSECT ,                        31 BIT WORK AREA                
+L3_SAVE   DS     18F                    SAVE AREA                       
+L3_W24    DS     F                      24 BIT AREA                     
+L3_MSGL   DC     AL2(L'L3_INDATA)       LENGTH OF MESSAGE FOR WTO       
+L3_INDATA DC     CL80' '                READ BUFFER AREA                
+L3_WTO    DC     XL(WTO_LEN)'00'        WTO PARAMETER AREA              
+L3_WSLN   EQU    *-L3_WS                                                
+*                                                                       
+W24_WS   DSECT ,                        24 BIT AREA                     
+W24_EYE  DS     CL8                     EYECATCHER                      
+W24_DCB1 DS     XL(DCB1_LEN)            DCB1 AREA                       
+W24_WSLN EQU    *-W24_WS                                                
+*                                                                       
+LAB3     CSECT ,                                                        
+*                                                                       
+*********************************************************************** 
+*        START OF PROGRAM                                             * 
+*********************************************************************** 
+*                                                                       
+         STM   R14,R12,12(R13)         SAVE REGISTERS                   
+         LR    R12,R15                 SET BASE REGISTER                
+         USING LAB3,R12                SET ADDRESSABILITY               
+*                                                                       
+         GETMAIN RU,LV=L3_WSLN,LOC=(31,64) GET STORAGE FOR WORK AREA    
+         ST    R13,4(,R01)             CHAIN SAVE AREAS                 
+         ST    R01,8(,R13)                                              
+         LR    R13,R01                 SET SAVE AREA ADDRESS            
+         USING L3_WS,R13               SET WORK AREA ADDRESSABILITY     
+*                                                                       
+         GETMAIN RU,LV=W24_WSLN,LOC=(24,64) GET STORAGE FOR 24BIT AREA  
+          ST    R01,L3_W24              SAVE POINTER TO 24BIT AREA       
+          LR    R06,R01                 SET SAVE AREA ADDRESS            
+          USING W24_WS,R06              SET WORK AREA ADDRESSABILITY     
+          MVC   W24_EYE,=CL8'W24_WS  '  EYE CATCHER                      
+          MVC   W24_DCB1,DATASET1       MOVE DCB1 TO 24 BIT              
+          MVC   L3_WTO,WTO1             MOVE WTO PARAM AREA              
+ *********************************************************************** 
+ *        MAIN PROCESSING                                              * 
+ *********************************************************************** 
+ *                                                                       
+          LA    R03,W24_DCB1                                             
+          OPEN  ((R03),INPUT),MODE=31                                    
+          LTR   R15,R15                                                  
+          BNZ   FINISH                                                   
+          LHI   R01,L'L3_INDATA               LENGTH OF WTO MESSAGE      
+          STH   R01,L3_MSGL                   SAVE IN WORKAREA           
+ LOOP     DS    0H                                                       
+          MVI   L3_INDATA,C' '                CLEAR INPUT BUFFER         
+          MVC   L3_INDATA+1(L'L3_INDATA-1),L3_INDATA                     
+          GET   W24_DCB1,L3_INDATA                                       
+          WTO   TEXT=L3_MSGL,MF=(E,L3_WTO)                               
+          J     LOOP                          PROCESS RECORDS UNTIL EOF  
+ CLOSE    DS    0H                                                       
+          LA    R03,W24_DCB1                                             
+          CLOSE ((R03)),MODE=31                                          
+          LTR   R15,R15                                                  
+          BNZ   FINISH                                                   
+ *********************************************************************** 
+ *        END OF PROGRAM                                               * 
+ *********************************************************************** 
+ *                                                                       
+ FINISH   DS    0H                                                       
+          LR    R02,R15                 SAVE RETURN CODE                 
+          L     R01,L3_W24              FREE OUR 24BIT AREA              
+          FREEMAIN RU,A=(1),LV=W24_WSLN                                  
+          DROP  R06                                                      
+          LR    R01,R13                 FREE OUR WORKAREA                
+          L     R13,L3_SAVE+4           CALLERS R13                      
+          FREEMAIN RU,A=(1),LV=L3_WSLN                                   
+          LR    R15,R02                 RESTORE RETURN CODE              
+          RETURN (14,12),RC=(15)        R14 CONTAIN ADDR OF CALLING PROG 
+ *                                                                       
+ *********************************************************************** 
+ *        END OF FILE                                                  * 
+ *********************************************************************** 
+ *                                                                       
+ EOF      DS    0H                                                       
+          L     R15,=F'1'               RETURN CODE                      
+          B     CLOSE                                                    
+ *                                                                       
+ ***************************************************************         
+ *        CONSTANTS                                            *         
+ ***************************************************************         
+ *                                                                       
+ WTO1     WTO   TEXT=,MF=L                                               
+ WTO_LEN  EQU   *-WTO1                                                   
+DATASET1 DCB   DDNAME=DDNAME1,                                         +
+               DSORG=PS,                                               +
+               RECFM=FB,                                               +
+               MACRF=GM,                                               +
+               LRECL=80,                                               +
+               DCBE=DATASET1E                                           
+DCB1_LEN  EQU  *-DATASET1                                               
+*                                                                       
+DATASET1E DCBE LOC=ANY,                                                +
+               BLKSIZE=800,                                            +
+               RMODE31=BUFF,                                           +
+               EODAD=EOF                                                
+*                                                                       
+         LTORG ,                                                        
+*                                                                       
+         END   LAB3                                                     
