@@ -45,13 +45,13 @@ LAB3     CSECT ,
          LR    R12,R15                 SET BASE REGISTER                
          USING LAB3,R12                SET ADDRESSABILITY               
 *                                                                       
-         GETMAIN RU,LV=L3_WSLN,LOC=(31,64) GET STORAGE FOR WORK AREA    
+         STORAGE OBTAIN,LENGTH=L3_WSLN,LOC=(31,64)                      
          ST    R13,4(,R01)             CHAIN SAVE AREAS                 
          ST    R01,8(,R13)                                              
          LR    R13,R01                 SET SAVE AREA ADDRESS            
          USING L3_WS,R13               SET WORK AREA ADDRESSABILITY     
 *                                                                       
-         GETMAIN RU,LV=W24_WSLN,LOC=(24,64) GET STORAGE FOR 24BIT AREA  
+          STORAGE OBTAIN,LENGTH=W24_WSLN,LOC=(24,64)                     
           ST    R01,L3_W24              SAVE POINTER TO 24BIT AREA       
           LR    R06,R01                 SET SAVE AREA ADDRESS            
           USING W24_WS,R06              SET WORK AREA ADDRESSABILITY     
@@ -86,13 +86,13 @@ LAB3     CSECT ,
  FINISH   DS    0H                                                       
           LR    R02,R15                 SAVE RETURN CODE                 
           L     R01,L3_W24              FREE OUR 24BIT AREA              
-          FREEMAIN RU,A=(1),LV=W24_WSLN                                  
+          STORAGE RELEASE,LENGTH=W24_WSLN,ADDR=(1)                       
           DROP  R06                                                      
           LR    R01,R13                 FREE OUR WORKAREA                
           L     R13,L3_SAVE+4           CALLERS R13                      
-          FREEMAIN RU,A=(1),LV=L3_WSLN                                   
-          LR    R15,R02                 RESTORE RETURN CODE              
-          RETURN (14,12),RC=(15)        R14 CONTAIN ADDR OF CALLING PROG 
+         STORAGE RELEASE,LENGTH=L3_WSLN,ADDR=(1)                        
+         LR    R15,R02                 RESTORE RETURN CODE              
+         RETURN (14,12),RC=(15)        R14 CONTAIN ADDR OF CALLING PROG 
  *                                                                       
  *********************************************************************** 
  *        END OF FILE                                                  * 
@@ -108,19 +108,19 @@ LAB3     CSECT ,
  *                                                                       
  WTO1     WTO   TEXT=,MF=L                                               
  WTO_LEN  EQU   *-WTO1                                                   
-DATASET1 DCB   DDNAME=DDNAME1,                                         +
-               DSORG=PS,                                               +
-               RECFM=FB,                                               +
-               MACRF=GM,                                               +
-               LRECL=80,                                               +
-               DCBE=DATASET1E                                           
-DCB1_LEN  EQU  *-DATASET1                                               
-*                                                                       
-DATASET1E DCBE LOC=ANY,                                                +
-               BLKSIZE=800,                                            +
-               RMODE31=BUFF,                                           +
-               EODAD=EOF                                                
-*                                                                       
-         LTORG ,                                                        
-*                                                                       
-         END   LAB3                                                     
+ DATASET1 DCB   DDNAME=DDNAME1,                                         +
+                DSORG=PS,                                               +
+                RECFM=FB,                                               +
+                MACRF=GM,                                               +
+                LRECL=80,                                               +
+                DCBE=DATASET1E                                           
+ DCB1_LEN  EQU  *-DATASET1                                               
+ *                                                                       
+ DATASET1E DCBE LOC=ANY,                                                +
+                BLKSIZE=800,                                            +
+                RMODE31=BUFF,                                           +
+                EODAD=EOF                                                
+ *                                                                       
+          LTORG ,                                                        
+ *                                                                       
+          END   LAB3                                                     
