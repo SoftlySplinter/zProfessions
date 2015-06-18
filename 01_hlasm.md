@@ -1183,3 +1183,16 @@ Perform via Branch and Stack instruction `BAKR R1,R2`, create a new linkage stac
 Return via: `PR`, retoring GPRs 2-14 and ARs 2-14. Stack entries are removed.
 
 Extract without branching via `EREG`.
+
+### Parameter Lists
+
+Register 1 points to a list of addresses and each address in the list points to the actual data. The end of the list *may* be indicated by the high order bit being on in the last entry. Parameter list are generally below the bar.
+
+### Dumps
+
+Find R13
+
+* SVC - STATUS FAILDATA
+* SLIP/ABEND - STATUS REGS
+* Console dump - SUMMARY FORMAT
+
