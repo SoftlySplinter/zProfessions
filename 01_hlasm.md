@@ -997,3 +997,34 @@ Available in assembler and PLX.
 Allows programs to be posted when the child task has terminated - much better than randomly sleeping.
 
 Parent TCB must DETACH child TCBs when they are terminated.
+
+### Serialisation
+ATTACHed TCBs all compete for CPU and therefore run in parallel (interleaved or genuinly parellel, depending on CPUs available). Sometimes you may need them to serialise on a resource.
+
+Programs may need to do the same whe:
+* Writing to a file
+* Accessing a shared resource
+* Ensuring only a single instance is running
+* etc.
+
+ISGENQ macro allows a program to OBTAIN or RELEASE an enqueue.
+
+The resource is named in QNAME. EXCLUSIVE or SHARED can be requested:
+
+* SHARED - no other TCBs can be using the resource EXCLUSIVEly.
+* EXCLUSIVE - no other resource can be using the resource.
+
+When writing the macro, there are multiple paths for when the resource is unavailable:
+
+* Get a RC
+* Cause an ABEND
+* Wait for the ENQ
+
+Once the program has finished with the resource, it calls ISGENQ RELEASE. **Note:** automatically released (process/TCB?).
+
+A scope can be set for the request:
+
+* STEP - if the resource is only in the program's address space
+* SYSTEM - if the resource is serialised across all address spaces in an LPAR.
+* SYSTEMS/SYSPLEX - if the resource is serialised to more than one LPAR on the sysplex.
+
