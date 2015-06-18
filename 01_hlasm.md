@@ -1172,3 +1172,14 @@ There are a few macros which do things for you:
 * `IHASAVEAR` (SYS`.MACLIB) is the DSECTs for save-area layout.
 
 
+### Linkage Stack
+
+System provided area were a target program can save the calling program's access registers and general purpose registers (ARs and GPRs). Saves both ARs and 64-bit GPRs, save areas are located in one place, rather than chained throughout the address space.
+
+Finite size (defaults to 96 entries per TCBs - can expand LSEXPAND) and makes dump reading trickier.
+
+Perform via Branch and Stack instruction `BAKR R1,R2`, create a new linkage stack entry and the contents of GPR 0-15 and AR 0-15. Can use with 0 to just save the registers.
+
+Return via: `PR`, retoring GPRs 2-14 and ARs 2-14. Stack entries are removed.
+
+Extract without branching via `EREG`.
