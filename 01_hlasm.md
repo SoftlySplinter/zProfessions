@@ -1028,3 +1028,147 @@ A scope can be set for the request:
 * SYSTEM - if the resource is serialised across all address spaces in an LPAR.
 * SYSTEMS/SYSPLEX - if the resource is serialised to more than one LPAR on the sysplex.
 
+## Linkage Conventions
+Conventions a linked program/subroutines should follow. Need to preserver registers from one program to another.
+
+Saving 31-bit registers is now a de-facto standard. 64-bit gets more interesting.
+
+Expect 31-bit registers 2-14 and 64-bit 2-13 unchanged. ARs 2-13 unchanged.
+
+To do this - use the:
+
+* caller provided save area
+* system provided linkage stack
+
+### Register Usage
+
+* R0 - parameter/reason code
+* **R1** - address of parameter list
+* R12 - program base address
+* **R13** - address of current save-area
+* **R14** - return address
+* **R15** - branch address/return code
+
+### Caller provided save-areas
+
+| (used by language products) |
+|:---------------------------:|
+| Backward pointer |
+| Forward pointer |
+| Register 14 |
+| Register 15 |
+| Register 0 |
+| Register 1 |
+| Register 2 |
+| Register 3 |
+| Register 4 |
+| Register 5 |
+| Register 6 |
+| Register 7 |
+| Register 8 |
+| Register 9 |
+| Register 10 |
+| Register 11 |
+| Register 12 |
+
+
+```hlasm
+* PROG A
+BASR  R14,R15           BRANCH TO PROG B
+```
+```hlasm
+* PROG B
+STM   R14,R12,12(R13)   STORE REGISTERS IN PROG A
+LR    R12,R15           COPY R15 AS GETMAIN USES IT
+GETMAIN RU,LV=72        CREATE SAVE-AREA
+ST    R13,4(,R1)        PUT SAVE-AREA ADDRESS IN FORWARD POINTER OF PROG A SAVE-AREA
+ST    R1,8(,R13)        PUT PROG A SAVE-AREA ADDRESS IN BACKWARD POINTER
+LR    R13,R1            CHANGE R13 TO POINT AT CURRENT SAVE AREA
+* ...
+LR    R1,R13            KEEP A COPY OF R13 FOR FREEMAIN
+L     R13,SAVEAREA+4    POINT R13 AT PROG A SAVE AREA
+FREEMAIN RU,A=(R1),LV=72
+LM    R14,R12,12(R13)   RESTORE REGISTERS FOR PROG A
+SR    R15,R15           SET R15 TO 0 (RETURN CODE)
+BR    R14               RETURN CONTROL TO PROG A
+```
+
+Then along came 64-bit
+
+For F4SA (64 replacement of 31 bit), the save area is 18 double-words (144 bytes). Backwards pointer is at offset x80 and forward pointer at 0x88.
+
+| 0000 'F4SA' |
+|:---------:|
+| Register 14 |
+| Register 15 |
+| Regsiter 0 |
+| Regsiter 1 |
+| Regsiter 2 |
+| Regsiter 3 |
+| Regsiter 4 |
+| Regsiter 5 |
+| Regsiter 6 |
+| Regsiter 7 |
+| Regsiter 8 |
+| Regsiter 9 |
+| Register 10 |
+| Register 11 |
+| Register 12 |
+| Backwards pointer |
+| Forward pointer |
+
+```hlasm
+* PROG A64
+
+```
+
+```hlasm
+* PROG B64
+STMG  R14,R12,8(,R13)        SAVE REGISTERS TO CALLERS SAVE-AREA
+GETMAIN RU,LV=144
+STG   R13,128(,R1)         SAVE FORWARD POINTER TO CALLERS SAVE-AREA
+STG   R1,136(,R13)         SAVE BACKWARD POINTER TO CURRENT SAVE-AREA
+MVC   4(4,R1),=A(C'F4SA')  ADD EYECATCHER
+LGR   R13,R1
+```
+
+Additional problems if a 64-bit aware program calls a 64-bit unaware program. In that case the old logic still works (31-bit pointers into 64-bit save area).
+
+More problematic is if a 64-bit unaware program calls a 64-bit aware program. Check the save-area eye-catcher and so the save-area is too small to save 64-bit registers. But can't just ignore the 64-bit registers as the callers caller might use them:
+
+F5SA: 27 double-words.
+
+```hlasm
+* POPULATE NORMAL SAVE AREA WITH LOW-ORDER BITS
+STM   R14,R12,12(R13)              STORE BOTTOM 32-BITS OF REGISTERS INTO THE NORMAL SAVE AREA
+SRLG  R0,R0,32                     KEEP TOP HALF OF R0, R1 AND R15 AS GETMAIN WILL MESS THEM UP
+LR    R2,R0
+SRLG  R1,R1                        
+LR    R3,R1
+SRLG  R15,R15,32
+LR    R4,R15
+GETMAIN RU,LV=216
+* POPULATE BOTTOM OF NEW SAVE-AREA WITH HIGH-ORDER BITS
+STG   R13,128(,R1)                  STORE R13 IN THE BACKWARDS POINTER OF THE NEW SAVE-AREA
+STMH  R2,R14,152(,R1)               STORE THE TOP HALF OF REGISTERS INTO THE NEW SAVE-AREA (AT THE BOTTOM)
+ST    R2,144(R1)                    STORE THE HIGH-ORDER BITS OF R0
+ST    R3,148(R1)                    STORE THE HIGH-ORDER BITS OF R1
+ST    R4,208(R1)                    STORE THE HIGH-ORDER BITS OF R15
+ST    R1,8(R13)                     ONLY IF YOU HAVE MORE THAN 2G IN THE SAVE AREA
+MVC   4(,4,R1),=A(C'F5SA')          EYECATCHER
+LGR   R13,R1
+* WEEP QUIETLY AND WAIT UNTIL YOU HAVE TO LOAD THIS ALL BACK
+```
+
+* F7SA - for programs which use 64-bit registers and ARs (27 double-words)
+* F8SA - for programs which use 64-bit registers and ARs, and caller only provided 72-byte save area (36 double-words)
+
+No logic for going from 64-bit no ARs to 64-bit ARs.
+
+There are a few macros which do things for you:
+
+* `SAVE` Save specified reange of registers in save-area addressed by R13 (SYSSTATE AMODE sensitive). **Gotcha:** R15 must point to it. `SAVE  (14,12),,*`
+* `RETURN` Retores a specified range of registers and set a return code in R15 (SYSSTATE AMODE sensitve). `RETURN  (14,12),T,RC=0`
+* `IHASAVEAR` (SYS`.MACLIB) is the DSECTs for save-area layout.
+
+
