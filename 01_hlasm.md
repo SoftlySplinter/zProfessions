@@ -966,3 +966,34 @@ The main use of relative addressing is for branching. Use Jump not Branch in HLS
 * RMODE - Residency Mode. Where the program is loaded.
 
 Most often the same and 31, unless there's a damn good reason not to.
+
+## Multi-threading
+*How to mess up many things at the same time*
+
+In z/OS an Address Space is created for a program, synonymous with a process. A TCB is synonymous with a thread. z/OS core services run as address spaces too.
+
+Address space is a virtual sandbox which contains the program, providing virtualised memory just for the program so one program cannot affect others (unless the program is authorised, and it's still difficult to do). Anything executing inside the address space is a TCB or SRB.
+
+The main task is on a single TCB, which is allowed to spawn more TCBs (each of which can spawn TCBs). Parents are in charge of starting and stopping child tasks, the parent will ABEND if it finishes before its children.
+
+### ATTACHX Macro
+Creates a new task specified by the EP parameter (EP contains the load module to attach).
+
+You can pass a parameter list to the attached load module, if the task is sucessfully attached, R1 contains the TCB address if the new subtask, which is required to control the subtask.
+
+### Allowing TCBs to communicate
+Inter-task communication allows co-ordination of the workload in the system - typically through ECBs.
+
+An ECB is a full word (4 bytes) on a full word boundary. Bit 1 indicates someone is WAITing on the ECB, bit 2 indicates someone has POSTed the ECB. Optionally a completion code in the other 30 bits.
+
+If someone POSTs before the WAIT, the WAIT immediately returns - the "waiter" must clear the ECB before waiting.
+
+As with all multi-threading architectures, this must be designed correctly!
+
+### POST and WAIT macros
+Available in assembler and PLX.
+
+### ATTACH with ECB parameter
+Allows programs to be posted when the child task has terminated - much better than randomly sleeping.
+
+Parent TCB must DETACH child TCBs when they are terminated.
