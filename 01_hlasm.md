@@ -73,9 +73,9 @@ One of the most common operations that *any* program performs.
 
 Before any computations can be performed, data must be moved to the correct places.
 
-* LOAD - data is loaded into the processors registers
-* STORE - data is stored to memory
-* MOVE - Data is moved from one area of memory to another
+* LOAD &rarr; data is loaded into the processors registers
+* STORE &rarr; data is stored to memory
+* MOVE &rarr; Data is moved from one area of memory to another
 
 #### Loading from Register to Register
 
@@ -182,10 +182,10 @@ XC  NUM1,NUM2   XOR NUM1 WITH NUM2 (256-BITS)
 
 Rules of thumb:
 
-* G -> 64-bits
-* H -> 16-bits
-* R -> Register
-* C -> Character
+* G &rarr; 64-bits
+* H &rarr; 16-bits
+* R &rarr; Register
+* C &rarr; Character
 
 
 The AND instructions perform AND bit-wise
@@ -236,15 +236,15 @@ HLASM allows for structured programming.
 
 Assembling is the process of changing assembler source code into OBJECT DECKS, producing 2 outputs:
 
-* OBJECT DECKS - this is the object code that is used as input to binding
-* Listing - this shows any errors, all diagnostics and human readable output from the assemble phase.
+* OBJECT DECKS &rarr; this is the object code that is used as input to binding
+* Listing &rarr; this shows any errors, all diagnostics and human readable output from the assemble phase.
 
 Binding is the process of combining object code into a LOAD MODULE. To bind use a Binder.
 
 The Binder produces 2 outputs:
 
-* LOAD MODULE - this is the bound object decks forming an assembler program
-* LOAD MAP - this is the binder equivalent of an assembler listing
+* LOAD MODULE &rarr; this is the bound object decks forming an assembler program
+* LOAD MAP &rarr; this is the binder equivalent of an assembler listing
 
 A LOAD MOUDLE can be loaded into memory by the operating system and run.
 
@@ -260,9 +260,9 @@ Labels start in column 1, operation codes start after column 1 or a label (norma
 
 #### CSECTS and DSECTS
 
-CSECT -> CONTROL SECTION (HLASM directive). A CSECT contains machine instructions to be run on the machine.
+CSECT &rarr; CONTROL SECTION (HLASM directive). A CSECT contains machine instructions to be run on the machine.
 
-DSECT -> DUMMY SECTION (HLASM directive). A DSECT is used to define the structure of data.
+DSECT &rarr; DUMMY SECTION (HLASM directive). A DSECT is used to define the structure of data.
 
 Both CSECT and DSECT are terminated with the END statement.
 
@@ -371,7 +371,7 @@ The branch mask instructs the processor that the branch will be taken if any of 
 Fortunately most code uses HLASM bracnh mnemonics to provide a branch mask.
 
 * `B` branch unconditionally (`BC 15,`)
-* `NOP` no operation - never take branch, used as a placeholder (`BC 0,`)
+* `NOP` no operation &rarr; never take branch, used as a placeholder (`BC 0,`)
 * `BE` branch on equal (`BC 8,`)
 * `BL` branch on low (`BC 4,`)
 * `BH` branch on high (`BC 2,`)
@@ -392,7 +392,7 @@ Condition Code - Mask value:
 
 How the mask works:
 
-* `B` uses mask `15` or `0b1111` or `8 + 4 + 2 + 1`, i.e. branch on any CC - always branch.
+* `B` uses mask `15` or `0b1111` or `8 + 4 + 2 + 1`, i.e. branch on any CC &rarr;f always branch.
 * `BE` uses mask `8` or `0b1000` or `8`, i.e. branch on CC 0.
 
 ```hlasm
@@ -407,9 +407,9 @@ B     COMMONCODE   REJOIN COMMON CODE
 ### Arithimetic
 Arithmetic is performed in a wide variety of ways on z/Architecture:
 
-* Fixed point (including logical) -> performed in GPRs
-* Packed decimal -> performed in memory
-* Binary and Hexidecimal floating point -> performed in FPRs
+* Fixed point (including logical) &rarr; performed in GPRs
+* Packed decimal &rarr; performed in memory
+* Binary and Hexidecimal floating point &rarr; performed in FPRs
 
 
 Fixed point arithimetic:
@@ -434,10 +434,10 @@ AFI   1,37       ADD 37 TO REGISTER 1 (IMMEDIATE)
 
 At the end of the addition, the CC is updated:
 
-* CC 0 -> result is 0; no overflow
-* CC 1 -> result is less than 0; no overflow
-* CC 2 -> result is greater than 0; no overflow
-* CC 3 -> overflow occured
+* CC 0 &rarr; result is 0; no overflow
+* CC 1 &rarr; result is less than 0; no overflow
+* CC 2 &rarr; result is greater than 0; no overflow
+* CC 3 &rarr; overflow occured
 
 #### SUBTRACT instructions
 
@@ -575,9 +575,9 @@ Each instruction is described in detail:
 
 Instruction format used is generally related to the assembler syntaxt and the operation.
 
-* `RR` Register-Register - this form usually manipulated registers.
-* `RX` Register, Index, base displacement - usually moving between memory and registers
-* `SS` Storage-Storage - acts on data in memory.
+* `RR` Register-Register &rarr; this form usually manipulated registers.
+* `RX` Register, Index, base displacement &rarr; usually moving between memory and registers
+* `SS` Storage-Storage &rarr; acts on data in memory.
 
 Diagrams show what the binary detail of the command, useful for problem diagnostics.
 
