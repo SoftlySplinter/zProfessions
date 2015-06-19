@@ -1196,3 +1196,210 @@ Find R13
 * SLIP/ABEND - STATUS REGS
 * Console dump - SUMMARY FORMAT
 
+## Inter-language Communication
+Each language has its own strenghts and weaknesses - choose the right tool for the job. Skill play a big part in the choice in language. Other choices such as cross-platform (shared modules between z/OS and distributed environments) play a factor as well.
+
+Each program and module in a project can call another via a well defined API.
+
+Java uses the Java Native Interface (JNI) in order to work with other language. C (and C++) use the `extern` keyword to define variables and functions defined externally in othe rmodules. These references are resolved at Link/Bind time.
+
+Whenever modules areas are linked together, they must conform to a calling convention. z/OS has different conventions depending on what type of code is being run and the environment inside z/OS in which it is to be run.
+
+C and C++ languages even provide directives in order to allow individual functions to be called with different linking conventions (e.g. `__cdecl`).
+
+Normally assembler has to conform to the conventions of the caller.
+
+| Environment                    | Linkage used  | C++ example                     |
+|--------------------------------|---------------|---------------------------------|
+| Non-LE ASsembler               | OS            | `extern "OS" { ... }`           |
+| LE Assembler, non-XPLINK C/C++ | OS\_UPSTACK   | `extern "OS_UPSTACK" { ... }`   |
+| Normal Assembler               | OS31\_NOSTACK | `extern "OS31_NOSTACK" { ... }` |
+| XPLINK C/C++                   | OS\_DOWNSTACK | `extern "OS_DOWNSTACK" { ... }` |
+| PL/I                           | PL/I          | `extern "PLI" { ... }`          |
+| COBOL                          | COBOL         | `extern "COBOL" { ... }`        |
+| FORTRAN                        | FORTRAN       | `extern "FORTRAN" { ... }`      |
+| C                              | C             | `extern "C" { ... }`            |
+
+After a module has been compiled or assembled, it is in a form called *object code*. Object code contains executable instructions, but:
+
+* References to OS services may be unresolved - resolved at link and load
+* Calls to other modules are unresolved - resolved at link
+* Calls to subroutines within the same module have been resolved
+* Relocatable variables in the code are unresolved - resolved at load
+
+As well as linking, the linked changes the format of the program into a load module.
+
+Example: C
+
+```c
+// file1.c
+extern int gbl_tot = 0;
+extern void prt_total();
+
+int main(void) {
+    gbl_tot = 10;
+    prt_total();
+    return 0;
+}
+```
+
+```c
+// file2.c
+#include <stdio.h>
+#include <stdlib.h>
+
+extern int gbl_tot;
+extern void prt_total();
+
+void prt_total() {
+    printf("%d", gbl_total);
+}
+```
+
+```sh
+# build_script.sh
+c89 -c file1.c
+c89 -c file2.c
+c89 -o my_prog file1.o file2.o
+./my_prog
+```
+
+HLASM uses V-type address constant in order to provide a pointer to an external subroutine.
+
+```hlasm
+          L     R12,=A(TOTAL)
+          USING TOTAL,R12   
+          STG   R11,TOTAL
+          L     R15=V(PRT_TOTAL)
+          BASR  R14,R15
+          COM   ,
+TOTAL     DS    FD
+```
+
+```HLASM
+          ENTRY PRT_TOTAL
+PRT_TOTAL DC    0H
+          L     R12,=A(TOTAL)
+          USING TOTAL,R12
+          LA    R5,WTO_BUF
+          LG    R6,TOTAL
+          BAS   R14,CONV_TEXT
+          WTO   TEXT=(5)
+          COM   ,
+TOTAL     DS    FD
+```
+
+Using C to call assembler.
+
+```c
+// main.c
+// Will call assembler
+#pragma linkage(CALLPRTF,OS)
+int main(void) {
+    CALLPRTF();
+    return 0;
+}
+```
+
+```c
+// call.c
+// Will be called from assembler
+
+// Setup LINK conventions
+#pragma linkage(_printf4, OS)
+
+#include <stdio.h>
+
+// Map _printf4 to @PRINTF4
+#pragma map(_printf4, "@PRINTF4")
+
+int _print4(char *str, int i) {
+    return printf(str, i);
+}
+```
+
+```hlasm
+CALLPRTF  CSECT
+          EDCPRLG
+          LA    R1,ADDR_BLK
+          L     R15,=V(@PRINTF4)
+          BAsR  R14,R15
+          EDCEPIL
+ADDR_BLK  DC    A(FMTSTR)
+          DC    A(X'80000000'+INTVAL)
+FMTSTR    DC    C'Sample formatting string'
+          DC    C' which includes an int -- %d --'
+          DC    AL1(NEWLINE,NEWLINE)
+          DC    C'and two newline characters'
+          DC    AL1(NULL)
+*
+INTVAL    DC    F'222'
+NULL      EQU   X'00'
+NEWLINE   EQU   X'15'
+          END
+```
+
+### Why Assembler and C should work.
+Assembler is used to program the machine's hardware. C is a general purpose system programming language, designed in order to (re)write the UNIX operating system.
+
+C++ is an extension to C, adding extra functionality (object-orientation, references, etc.)
+
+Both C and C++ support the `asm` keyword in order to embed assembler (**note:** `__asm` is not part of C/C++, it is added by the z/OS compiler (which doesn't support `asm`).
+
+The C standard would be:
+
+```c
+int main(void) {
+    asm("xr 5,5");
+    return 2;
+}
+```
+
+Using the z/OS C compiler will not resolve the `asm` keyword. In z/Linux it might compile, but might not be as expected (compilers get in the way).
+
+It's still not great even with `__asm`. You have to provide a special runtime environment: METAL option on the C compiler.
+
+```c
+__asm volatile ("assembler code"
+                   :output
+                   :input
+                   :clobber_list
+               );
+```
+
+`volatile` keyword stops compiler from optimising the ASM.
+
+The modifiers on input/output are:
+
+* `=` &rarr; operand is write-only (previous value is discarded)
+* `+` &rarr; operand is read/write
+* `&` &rarr; operand may be modified before the instruction finishes
+
+The constraints are:
+
+* `a` &rarr; GPR except for 0
+* `d/r` &rarr; use a GPR
+* `i` &rarr; use immediate (integer or string) operand
+* `m` &rarr; memory operand
+* `n` &rarr; immediate integer
+* `s` &rarr; immediate string
+
+```c
+unsigned in strlen(const char * c) {
+    unsigned int retval;
+    __asm volatile(
+                "          XR    r0,r0       \n"
+                "          L     r5,%1       \n"
+                "SRST_LOOP SRST  r0,r5       \n"
+                "          BC    1,SRST_LOOP \n"
+                "          SR    r0,r5       \n"
+                "          ST    r0,%0       \n"
+                :"=m"(retval)
+                :"m"(c)
+                :"r0","r5"
+                  );
+    return retval;
+}
+```
+
+Using high-level languages means the code is only as good as the compiler, using HLASM means the codes is only as good as the code. Sometimes one of these are good, sometimes one of these are bad (and sometimes both)!
