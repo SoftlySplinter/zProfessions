@@ -144,3 +144,8 @@ Includes ++HOLDs for ERROR (PE and Hiper), which includes fixing PTFs when avail
 Service supply a Recommended Service Upgrade (RSU) which is a level of maintenance for all z/OS products which have been tested tohether.
 
 HIPER and PE APARs reviewed weekly and installed weekly-monthly.
+
+## Job Control Language INput (JCLIN)
+Tells SMP/E how to install elements into the target libraries during the apply.
+
+JCLIN is not JCL, it can't be submitted or executed, it is a syntax used by SMP/E. Used primarily for Linkedit steps.
