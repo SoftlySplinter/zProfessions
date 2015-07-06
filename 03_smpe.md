@@ -120,3 +120,27 @@ SMP/E parses the assembler, copy and linkedit control statements to build inform
 
 ### UCLIN
 Think of this as the SMP/E database control language. Very easy to mess up SMP/E.
+
+## Maintenance
+The service team diagnose and fix problems.
+
+### HOLDDATA
+Includes ++HOLDs for ERROR (PE and Hiper), which includes fixing PTFs when available. HOLDDATA is updated daily. SMP/E RECEIVE command is used to receive HOLDDATA into the global CSI. One file is used for all z/OS products.
+
+### IBM service process
+* PTF is a fix which has been through the complete review cycle by L3.
+* APAR is a temporary fix
+* USERMOD is a fix similar to an APAR, but supplied by the user (CICS does not follow this definition, we supply a ++USERMOD not a ++APAR).
+
+1. Customer raises PMR
+2. L2/L3 diagnose a bug in IBM code
+3. L2 raises an APAR
+4. L3 accept APAR and code fix
+5. L3 provide a USERMOD to eager customer
+6. L3 reviews and tests APAR code
+7. L3 closes APAR and sends to build
+8. Build create PTF and ships to Boulder
+
+Service supply a Recommended Service Upgrade (RSU) which is a level of maintenance for all z/OS products which have been tested tohether.
+
+HIPER and PE APARs reviewed weekly and installed weekly-monthly.
