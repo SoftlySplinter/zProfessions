@@ -151,3 +151,4 @@ SLIP SET,Event,Conditions,Action,Tailor,END
  * `MATCHLIM=` number of times SLIP fires before automatically disabling
 
 ## Language Enclave (LE)
+To review a SYSMDUMP, use VERBEXIT CEEERRIP (alias LEDATA). SUMMARY provides general info and run-time options. CEEDUMP is used for traceback report. CM for condition information such as condition codes, failing PSW and registers at time of error.
