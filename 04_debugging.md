@@ -19,11 +19,11 @@ The common diagnosis process is:
 * Use program source (in CRUISE) together with the state from the dump to find the bug.
 
 ## Sources of Diagnosis Data
-* [Message logs](#Messages)
-* [LOGREC](#LOGREC)
-* [SMF](#System Measurement Facility)
-* [Trace](#Trace)
-* [DUMP](#DUMP)
+* [Message logs](#messages)
+* [LOGREC](#logrec)
+* [SMF](#system-measurement-facility)
+* [Trace](#trace)
+* [DUMP](#dump)
 
 ### Messages
 Message logs:
