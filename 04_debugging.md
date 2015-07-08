@@ -94,7 +94,60 @@ Remember the ? Operator e.g. `IP L 0 STR`, `IPL L 10? STR` look at offset 10 fro
   * GTF is not normally in dump unless started with `MODE=INT`
   * Product traces usually via product supplied `VERBX` e.g. `DFHPDxx` for CICS or `CSQWDxx` for MQ.
 
-## SLIPs
+## Servicability Level Indication Processing (SLIP) Traps
+System command which can be run to trap system events and errors. Many options for tailoring to unique problems or conditions.
 
+SLIP processing is a combination of hardware and software. It get invoked before FRRs and ESTAEs (recovery) which means than any converted (or changed by recovery) ABEND codes will not be seen by the SLIP - i.e. it traps the original ABEND code. In order to trace, the *original* ABENE code must be specified for the SLIP - look at the original source code.
+
+Can be used for:
+
+* Obtaining a dump or trace when in a particular scenario occurs:
+  * An instruction is executed (Instruction Fetch, `IF`)
+  * Storage area changed (Storage Alteration, `SA`)
+  * Message issues (`MSGID=`)
+  * ABEND (`COMP=`)
+* Dump additional diagnostic information
+  * Other address spaces
+  * Dataspaces
+  * CF structures
+* Ensure DAE doesn't stop dumps
+* Suppressing dumps
+* Getting a dump before ESTAE or FRR recovert routines get invoked
+* Repairing things (`REFBEFOR`/`REFAFTER`)
+* Testing recovery
+
+```
+SLIP SET,Event,Conditions,Action,Tailor,END
+```
+
+* Event fires when a specific condition is met
+ * `IF` fires when a specified instriction, or range of, is executed
+ * `SA` fires when a specific storage address, or range of, is altered
+ * `SBT` fires when a branch to a specified instruction, or range of, is successful
+ * `COND=` fires when ABEND occurs
+ * `MSGID=` fires when message is issued (by a WTO)
+* Conditions, what needs to be true for the trap to fire
+ * `DATA=` specifis contents of storage locations or registers
+ * `JOBNAME=`/`ASID=` specifies address space
+ * `PVTMOD=`/`LPAMOD=`/`NUCMOD` specifies instruction address range to be monitored (for `IF`).
+ * `RANGE=`, specifies storage address range to be monitored (for `SA`).
+* Action, what to do when the trap fires
+ * `ACTION=`
+   * `SVCD` (async)
+   * `SYNCSVCD` (sync, PER only)
+   * `NODUMP` don't take a dump
+   * `TRACE` write a trace record to GTF
+   * `RECORD` force logrec recording (override ESTA/FRR)
+   * `RECOVERY` take a `06F` ABEND (PER only)
+   * `REFBEFOR`/`REFAFTER` change ('refresh') storage or registers before or after SLIP takes other actions
+   * `TARGETID` enable another SLIP trap
+   * `STOPGTF` stop GTF tracint
+* Tailor, extra stuff to go with the action
+ * `JOBLIST=` jobnames to dump
+ * `TRDATA=` specifies what to trace
+ * `ASIDLST=` address spaces to dump
+ * `STRLIST=` coupling facilities structures to dump
+ * `DSPNAME=` dataspace to dump
+ * `MATCHLIM=` number of times SLIP fires before automatically disabling
 
 ## Language Enclave (LE)
