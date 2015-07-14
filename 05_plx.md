@@ -144,3 +144,18 @@ DERLARE variable-name1 attributes,
 | 63        | 8      | Unsigned | 0                          | 9,223,372,036,854,775,807  | Doubleword                           |
 | 64        | 8      | Unsigned | 0                          | 18,446,744,073,709,551,615 | Doubleword                           |
 
+## Arrays
+
+Default low index is 1 (unlike C-style language).
+
+Maximum of 15 dimensions. Can have negative indecies. PL/X doesn't check the index.
+
+`DCL CharArray(0:4) CHAR(5);` uses low boundary 0 and high boundary 4.
+
+`DCL FixedArray(5) FIXED(31);` uses default low boundary (1) and high boundary 5.
+
+`DCL MultArray(5,4) CHAR(6);` creates a multidimensional array
+
+`DCL TwoDimArray(0:4,1:5) FIXED(31);` creates a multidimensional array.
+
+Indexing the array is done using `CharArray(1) = 'RAB';`. Can be done using variable. To substring the code is: `CharArray(1,2:3) = 'AB';`. In multidimensional arrays, all indexes must be specified.
