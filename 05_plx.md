@@ -11,7 +11,7 @@ The compiler optimisation is not perfect, as expected. But it can use optimising
 
 It can leverage new instructions just by recompiling a module.
 
-PL/X bears resemblance to <abbr title="Programming Language 1">PL/1</abbr>, <abbr title="Basic System Language">BSL</abbr>, <abbr title="Programming Language Systems">PL/S</abbr and <abbr title="Programming Language Advanced Systems">PL/AS</abbr>
+PL/X bears resemblance to <abbr title="Programming Language 1">PL/1</abbr>, <abbr title="Basic System Language">BSL</abbr>, <abbr title="Programming Language Systems">PL/S</abbr> and <abbr title="Programming Language Advanced Systems">PL/AS</abbr>
 
 PL/X has object-orientated and procedural paradigms.
 
