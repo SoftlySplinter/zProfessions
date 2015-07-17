@@ -1,4 +1,6 @@
 # Programming Language/Cross Systems (PL/X)
+
+## Overview
 PL/X source is converted into optimised assembler, which *should* be easier to maintatin than bare assembler.
 
 PL/X provides full access to the hardware of the target machine with the full flexibility of assembler, but with the benefits of a high-level language.
@@ -15,7 +17,7 @@ PL/X bears resemblance to <abbr title="Programming Language 1">PL/1</abbr>, <abb
 
 PL/X has object-orientated and procedural paradigms.
 
-## Modules
+### Modules
 
 Typical module structure:
 
@@ -144,7 +146,7 @@ DERLARE variable-name1 attributes,
 | 63        | 8      | Unsigned | 0                          | 9,223,372,036,854,775,807  | Doubleword                           |
 | 64        | 8      | Unsigned | 0                          | 18,446,744,073,709,551,615 | Doubleword                           |
 
-## Arrays
+### Arrays
 
 Default low index is 1 (unlike C-style language).
 
@@ -159,3 +161,70 @@ Maximum of 15 dimensions. Can have negative indecies. PL/X doesn't check the ind
 `DCL TwoDimArray(0:4,1:5) FIXED(31);` creates a multidimensional array.
 
 Indexing the array is done using `CharArray(1) = 'RAB';`. Can be done using variable. To substring the code is: `CharArray(1,2:3) = 'AB';`. In multidimensional arrays, all indexes must be specified.
+
+## Program Optimisation
+
+## Expressions and Program Flow
+
+## Subroutines
+
+### Program Optimisation using Subroutines
+
+### Parameter Passing
+
+### Functions
+
+### Nesting and Scope
+
+### Subroutines in the Assembly Listing
+PL/X source as a comment &rarr; Compiled assembler. Useful for knowing which instructions are actually being run; not optimal for humans.
+
+Standard linkage conventions (`STM @14,@12,12(@13)`) in the entry and (`LM @14,@12,12(@13)`) in the exit. Declared variables will appear in a seperate area for variables (LTORG).
+
+Compiler options can change the location of the generated assembler. There are two common (recommended) options:
+
+* `REORDER`
+* `INLINE`
+
+#### `REORDER` Option
+Allows the compiler to take advantage of the efficiency of overlapped execution, (i.e. pipelined) machines.
+
+The recommendation is that z/OS modules should specify `REORDER`.
+
+Will produce different code, especially the ordering of instructions.
+
+#### `INLINE` Option
+The `INLINE(MAX)` options invokes precedure inlining. The optimisation process where the compiler replaces a procedure invocation with the actual procedure code, i.e. it is inserted where the procedure is called.
+
+Points of note:
+
+1. The procedure must have an `ENTRY` declaration,
+2. The compiler chooses the procedures to inline,
+3. Requires the `OPTIMIZATION` option to be specified.
+
+This can improve the execution time of a module and *can* have an effect on module size (increase or decrease).
+
+The recommendation is that z/OS modules should consider specifying `INLINE(MAX)`, especially for non-LPA modules.
+
+PL/X can eliminate building parameter lists.
+
+Balancing act between module size and execution time. Remember the addressability issues (when not using relative addressing).
+
+There are also compiler options (`@INLINE`) or the `INLINE ENTRY` declare option. RTFM.
+
+#### Eliminating Clutter
+The compiler will not include initial comments and declares from the assembler listing. But putting an instruction at the top of the module will cause them to be included, this is known as "clutter"; not a good idea, but it is useful for debugging.
+
+### `?BLRCNV` Macro
+Coercing data from one type to another.
+
+```plx
+ DCL String CHAR(100) VARYING SINIT('1234')
+     ,Value FIXED(31);
+ ?BLRCNV (String)                 !
+         FROM(CHAR)               !
+         TO(FIXED                 !
+         SET(Value);
+```
+
+When using `?BLR` macros, `?BLRDEFEP` must also be specified.
